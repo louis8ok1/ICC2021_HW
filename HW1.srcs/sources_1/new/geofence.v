@@ -49,9 +49,9 @@ reg done_ordering_1;
 reg [3:0] counter;
 
 //store x,y ,r array;
-reg  [9:0]x_array[0:6];
-reg  [9:0]y_array[0:6];
-reg [10:0]r_array[0:6];
+reg  [9:0]x_array[0:5];
+reg  [9:0]y_array[0:5];
+reg [10:0]r_array[0:5];
 
 
 //store  vector 
@@ -61,9 +61,9 @@ reg [9:0]y_vector[0:4];
 reg [9:0]x_y_vector[0:4];
 
 //final order point
-reg  [9:0]x_final_array[0:6];
-reg  [9:0]y_final_array[0:6];
-reg [10:0]r_final_array[0:6];
+reg  [9:0]x_final_array[0:5];
+reg  [9:0]y_final_array[0:5];
+reg [10:0]r_final_array[0:5];
 
 reg  [9:0]x_final_temp_array_1;
 reg  [9:0]y_final_temp_array_1;
@@ -73,17 +73,30 @@ reg  [9:0]x_final_temp_array_2;
 reg  [9:0]y_final_temp_array_2;
 reg [10:0]r_final_temp_array_2;
 
-reg  [9:0]x_final_temp_less_array[0:6];
-reg  [9:0]y_final_temp_less_array[0:6];
-reg [10:0]r_final_temp_less_array[0:6];
+reg  [9:0]x_final_temp_less_array[0:5];
+reg  [9:0]y_final_temp_less_array[0:5];
+reg [10:0]r_final_temp_less_array[0:5];
 
-reg  [9:0]x_final_temp_greater_array[0:6];
-reg  [9:0]y_final_temp_greater_array[0:6];
-reg [10:0]r_final_temp_greater_array[0:6];
+reg  [9:0]x_final_temp_greater_array[0:5];
+reg  [9:0]y_final_temp_greater_array[0:5];
+reg [10:0]r_final_temp_greater_array[0:5];
 
-reg  [9:0]x_temp_greater_array[0:6];
-reg  [9:0]y_temp_greater_array[0:6];
-reg [10:0]r_temp_greater_array[0:6];
+reg  [9:0]x_temp_greater_array[0:5];
+reg  [9:0]y_temp_greater_array[0:5];
+reg [10:0]r_temp_greater_array[0:5];
+
+//area parameter
+reg [10:0]point_close_distance[0:5];
+reg [10:0]triangle_edge_sum[0:5];
+reg [10:0]triangle_area[0:5];
+reg [10:0]triangle_area_sum;
+reg [10:0]hexagon;
+reg is_inside_temp;
+reg valid_temp;
+
+assign is_inside = is_inside_temp;
+assign valid = valid_temp ;
+
 
 //FSM begin 
 parameter [2:0] IDLE = 0,CALCULATE_BOTTOM_LEFT_POINT = 1,CALCULATE_ORDERING = 2,CALCULATE_AREA = 3,COMPLETE = 4;
@@ -153,7 +166,8 @@ integer  w;
 //Calculate six points ordering
 always@(posedge clk)begin
     case(Q)
-
+        IDLE:
+            valid_temp <=0;
         CALCULATE_BOTTOM_LEFT_POINT:
             if(counter<6)begin//input x,y,r to array 
                 x_array[counter] <= X;
@@ -203,27 +217,27 @@ always@(posedge clk)begin
                     end   
                 end*/
 
-                //counter how much point's x equare = x_array[0];
-                for(j=1;j<5;j=j+1)begin
+                //counter how much point's x equare  x_array[0];
+                for(j=1;j<6;j=j+1)begin
                     if(x_array[j]==xx_temp)
                         counter_ordering_minimum <= counter_ordering_minimum + 1; 
                 end
                 //find the most left and most down point
-                if(j==5)begin
+                if(j==6)begin
                     for(i=counter_ordering_minimum;i>0;i=i+1)begin
                         for(k=0;k<i-1;k=k+1)begin
                             if(y_array[k]>y_array[k+1])begin
                                 yy_temp <= y_array[k];
-                                y_array[k+1] <= y_array[k];
-                                y_array[k] <= yy_temp;
+                                y_array[k] <= y_array[k+1];
+                                y_array[k+1] <= yy_temp;
 
-                                xx_temp          <=x_array[j];
-                                x_array[j]      <=x_array[j+1];
-                                x_array[j+1]    <=xx_temp;
+                                xx_temp          <=x_array[k];
+                                x_array[k]      <=x_array[k+1];
+                                x_array[k+1]    <=xx_temp;
 
-                                rr_temp          <=r_array[j];
-                                r_array[j]      <=r_array[j+1];
-                                r_array[j+1]    <=rr_temp;
+                                rr_temp          <=r_array[k];
+                                r_array[k]      <=r_array[k+1];
+                                r_array[k+1]    <=rr_temp;
                             end
                         end
                         if(i==0)begin
@@ -336,13 +350,13 @@ always@(posedge clk)begin
                         
                         //r_final_array[0:6] <= {r_final_temp_less_array[0:i],r_final_temp_greater_array[0:6-i]};
 
-                    for(k=0;k<i;k++)begin
+                    for(k=0;k<i;k=k+1)begin
                         x_final_array[k] <= x_final_temp_less_array[k];
                         y_final_array[k] <= y_final_temp_less_array[k];
                         r_final_array[k] <= r_final_temp_less_array[k];
                     end
                     if(k==i)begin
-                        for(u=0;u<j;u++)begin
+                        for(u=0;u<j;u=u+1)begin
                             if(k!=6)begin
                                 x_final_array[k] <= x_final_temp_greater_array[u];
                                 y_final_array[k] <= y_final_temp_greater_array[u];
@@ -381,12 +395,60 @@ always@(posedge clk)begin
 
 end
 
-//x_final_array[k] 
-//y_final_array[k] 
-//r_final_array[k]
+
+
+
+
+//x_final_array[0:5] 
+//y_final_array[0:5] 
+//r_final_array[0:5]
 always@(posedge clk)begin
     case(Q)
         CALCULATE_AREA:
+
+            if(done_ordering)begin
+                //先算外邊的長度
+                for(i=0;i<5;i=i+1)begin
+                    point_close_distance[i] <= 0.5 * (((x_final_array[i] - x_final_array[i+1])^2) - ((y_final_array[i] - y_final_array[i+1])^2));
+
+                end
+                
+            end
+            
+            //calculate 6 of triangle areas
+            else if(i == 5)begin
+                //6個三角形的面積
+                for(j=0;j<5;j++)begin
+                    triangle_edge_sum[j] <= 0.5*(point_close_distance[j]+r_final_array[j]+r_final_array[j+1]);
+                    triangle_area[j] <= (0.5*(triangle_edge_sum[j]*(triangle_edge_sum[j]-point_close_distance[j])));
+                    triangle_area[j] <= triangle_area[j] * (0.5*((triangle_edge_sum[j]-r_final_array[j])*(triangle_edge_sum[j]-r_final_array[j+1])));
+                end
+                //hexagon面積
+                hexagon <= 0.5 * (((x_final_array[0]*y_final_array[1])-(x_final_array[1]*y_final_array[0]))+ ((x_final_array[1]*y_final_array[2])-(x_final_array[2]*y_final_array[1]))+((x_final_array[2]*y_final_array[3])-(x_final_array[3]*y_final_array[2]))+((x_final_array[3]*y_final_array[4])-(x_final_array[4]*y_final_array[3]))+((x_final_array[4]*y_final_array[5])-(x_final_array[5]*y_final_array[4]))+((x_final_array[5]*y_final_array[0])-(x_final_array[0]*y_final_array[5]))); 
+                //my order is downclock;
+                if(hexagon < 0)begin
+                        hexagon <= -hexagon ; 
+                end
+
+            end
+
+            else if(j == 5)begin
+                 //6個三角形的面積和
+                    triangle_area_sum <= triangle_area[0] + triangle_area[1] + triangle_area[2] + triangle_area[3] + triangle_area[4] + triangle_area[5];
+                
+                    
+            end
+        COMPLETE:
+            
+            if(valid_temp == 1)begin
+                 if(triangle_area_sum > hexagon)begin
+                       is_inside_temp <= 0;
+                    end
+                    else begin
+                        is_inside_temp <= 1;
+                    end
+            end
+
 
         
     endcase
